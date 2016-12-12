@@ -69,3 +69,10 @@
 	}
 
 ####1.3.1.2 Setter方法注入
+1、Setter注入是先调用无参的构造方法或者无参静态工厂方法创建实例后，调用setter 方法注入的。
+2、一般通过构造器注入必须的依赖，通过setter方法注入可选的依赖，但是可以在setter方法上添加@Required 注解，使属性成为必须的依赖。
+3、setter方法注入可以重新注入，覆盖依赖。
+####1.3.1.3 依赖解析过程 Dependency resolution process
+1、IOC容器创建的时候，会校验每个bean的配置  
+2、bean创建的时候，通过setter注入 properties  
+3、单例的bean或者预实例化的bean(默认)在重启创建的时候被实例化，其他(懒加载)的bean只有在被用到的时候才被实例化    

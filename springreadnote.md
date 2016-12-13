@@ -16,8 +16,8 @@
 ###1.2.2 实例化bean
 ####1.2.2.1 根据xml配置文件实例化bean
 1、构造方法模式：通过new操作符调用class对应的构造方法  
-2、静态工厂方法模式：，通过配置<bean/>的factory-method属性，调用class的static工厂模式方法创建对象；如果<bean/>的class属性为静态内部类，应该使用静态内部类的名称（com.example.Foo$Bar，Bar是Foo的静态内部类）  
-3、实例化工厂模式：<bean/>的class置空，factory-bean属性引用定义的工厂bean，factory-method指定工厂bean对应的工厂方法。一个工厂类可以有一个以上的工厂方法。
+2、静态工厂方法模式：，通过配置&lt;bean/&gt;的factory-method属性，调用class的static工厂模式方法创建对象；如果&lt;bean/&gt;的class属性为静态内部类，应该使用静态内部类的名称（com.example.Foo$Bar，Bar是Foo的静态内部类）  
+3、实例化工厂模式：&lt;bean/&gt;的class置空，factory-bean属性引用定义的工厂bean，factory-method指定工厂bean对应的工厂方法。一个工厂类可以有一个以上的工厂方法。
 ##1.3 依赖-Dependencies
 ###1.3.1 依赖注入-Dependency Injection
 ####1.3.1.1 构造器注入
@@ -69,10 +69,223 @@
 	}
 
 ####1.3.1.2 Setter方法注入
-1、Setter注入是先调用无参的构造方法或者无参静态工厂方法创建实例后，调用setter 方法注入的。
-2、一般通过构造器注入必须的依赖，通过setter方法注入可选的依赖，但是可以在setter方法上添加@Required 注解，使属性成为必须的依赖。
+1、Setter注入是先调用无参的构造方法或者无参静态工厂方法创建实例后，调用setter 方法注入的。  
+2、一般通过构造器注入必须的依赖，通过setter方法注入可选的依赖，但是可以在setter方法上添加@Required 注解，使属性成为必须的依赖。  
 3、setter方法注入可以重新注入，覆盖依赖。
 ####1.3.1.3 依赖解析过程 Dependency resolution process
 1、IOC容器创建的时候，会校验每个bean的配置  
 2、bean创建的时候，通过setter注入 properties  
 3、单例的bean或者预实例化的bean(默认)在重启创建的时候被实例化，其他(懒加载)的bean只有在被用到的时候才被实例化    
+4、构造器注入如果出现循环注入，可以通过setter注入解决  
+###1.3.2 依赖与配置细节 Dependencies and configuration in detail
+####1.3.2.1 直接值 Straight values (primitives, Strings, and so on)
+1、通过 &lt;property/&gt; 的value属性来讲bean的属性和构造参数以可读的方式体现，Spring的**conversion service**会将这些值转换为对应的类型  
+2、也可以通过使用命名空间p(p-namespace)来简化xml配置  
+
+	<beans xmlns="http://www.springframework.org/schema/beans"
+	    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	    xmlns:p="http://www.springframework.org/schema/p"
+	    xsi:schemaLocation="http://www.springframework.org/schema/beans
+	    http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	    <bean id="myDataSource" class="org.apache.commons.dbcp.BasicDataSource"
+	        destroy-method="close"
+	        p:driverClassName="com.mysql.jdbc.Driver"
+	        p:url="jdbc:mysql://localhost:3306/mydb"
+	        p:username="root"
+	        p:password="masterkaoli"/>
+
+	</beans>
+
+3、Spring容器还支持通过 **PropertyEditor**机制，实例化一个**java.util.Properties**实例
+
+	<bean id="mappings"
+	    class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+	
+	    <!-- typed as a java.util.Properties -->
+	    <property name="properties">
+	        <value>
+	            jdbc.driver.className=com.mysql.jdbc.Driver
+	            jdbc.url=jdbc:mysql://localhost:3306/mydb
+	        </value>
+	    </property>
+	</bean>
+4、idref 元素，是将其他bean的id作为字符串value通过&lt;constructor-arg/&gt;或者&lt;property/&gt;传给对应的bean，所有类似于constructor-arg/&gt;或者&lt;property/&gt;的value属性，但是idref可以在部署的时候校验id对应的bean是否存在
+
+	<bean id="theTargetBean" class="..."/>
+
+	<bean id="theClientBean" class="...">
+	    <property name="targetName">
+	        <idref bean="theTargetBean" />
+	    </property>
+	</bean>
+
+等价于
+
+	<bean id="theTargetBean" class="..." />
+
+	<bean id="client" class="...">
+	    <property name="targetName" value="theTargetBean" />
+	</bean>
+
+**注：idref元素的local属性可以指定是该xml中定义的bean，但是该属性在Spring4.0中已经过期，不再支持。**
+
+5、关联其他bean References to other beans (collaborators)，是通过ref元素或者属性来实现的，ref元素有三个属性，bean, local(4.0过期), or parent。bean属性的值可以目标bean的id或者name；如果有相同id的bean存在父容器需要bean注入，可以通过parent属性来指定。  
+6、内部beans(Inner beans)，是在&lt;constructor-arg/&gt;或者&lt;property/&gt;元素内部的bean元素，内部bean不需要定义id或者name，就算定义了，也会被忽略。内部bean除了注入到包围他的bean中外不能被注入到其他合作的bean中，也不能独立的访问他们。  
+7、通过&lt;list/&gt;,&lt;set/&gt;,&lt;map/&gt;,&lt;props/&gt;等元素，你可以设置Java集合类型的参数，例如List, Set, Map, and Properties。  
+	
+	<bean id="moreComplexObject" class="example.ComplexObject">
+	    <!-- results in a setAdminEmails(java.util.Properties) call -->
+	    <property name="adminEmails">
+	        <props>
+	            <prop key="administrator">administrator@example.org</prop>
+	            <prop key="support">support@example.org</prop>
+	            <prop key="development">development@example.org</prop>
+	        </props>
+	    </property>
+	    <!-- results in a setSomeList(java.util.List) call -->
+	    <property name="someList">
+	        <list>
+	            <value>a list element followed by a reference</value>
+	            <ref bean="myDataSource" />
+	        </list>
+	    </property>
+	    <!-- results in a setSomeMap(java.util.Map) call -->
+	    <property name="someMap">
+	        <map>
+	            <entry key="an entry" value="just some string"/>
+	            <entry key ="a ref" value-ref="myDataSource"/>
+	        </map>
+	    </property>
+	    <!-- results in a setSomeSet(java.util.Set) call -->
+	    <property name="someSet">
+	        <set>
+	            <value>just some string</value>
+	            <ref bean="myDataSource" />
+	        </set>
+	    </property>
+	</bean>
+集合的值也可以还是集合元素。  
+8、如果有继承关系的bean，可以通过集合的merge="true"的属性，来合并父bean中和子bean中集合的值，如果有序的集合，类似List类型，父bean的属性值排在子bean的属性值之前；Map或者Properties相同的key，value会被覆盖。
+
+	<beans>
+	    <bean id="parent" abstract="true" class="example.ComplexObject">
+	        <property name="adminEmails">
+	            <props>
+	                <prop key="administrator">administrator@example.com</prop>
+	                <prop key="support">support@example.com</prop>
+	            </props>
+	        </property>
+	    </bean>
+	    <bean id="child" parent="parent">
+	        <property name="adminEmails">
+	            <!-- the merge is specified on the child collection definition -->
+	            <props merge="true">
+	                <prop key="sales">sales@example.com</prop>
+	                <prop key="support">support@example.co.uk</prop>
+	            </props>
+	        </property>
+	    </bean>
+	<beans>
+注意，不能合并不同类型的集合属性，比如不能将list或者map；merge属性应该是child的属性，在parent上设置merge属性是没有意义的。  
+9、Null and empty string values 
+	
+	<bean class="ExampleBean">
+	    <property name="email" value=""/>
+	</bean>
+
+	<bean class="ExampleBean">
+	    <property name="email">
+	        <null/>
+	    </property>
+	</bean>
+	
+10、通过p或c命名空间，可以简化xml配置
+	
+	<beans xmlns="http://www.springframework.org/schema/beans"
+	    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	    xmlns:p="http://www.springframework.org/schema/p"
+		xmlns:c="http://www.springframework.org/schema/c"
+	    xsi:schemaLocation="http://www.springframework.org/schema/beans
+	        http://www.springframework.org/schema/beans/spring-beans.xsd">
+	
+	    <bean name="p-namespace" class="com.example.ExampleBean"
+	        p:email="foo@bar.com"  p:spouse-ref="jane"/>
+
+		<!-- c-namespace declaration -->
+		<bean id="foo" class="x.y.Foo" c:bar-ref="bar" c:baz-ref="baz" c:email="foo@bar.com"/>
+		
+		<!-- c-namespace index declaration -->
+		<bean id="foo" class="x.y.Foo" c:_0-ref="bar" c:_1-ref="baz"/>
+	</beans>
+可以通过驼峰命名法来定义ref，例如p:spouseRef，但是这个容易和以Ref结尾的属性名冲突。  
+11、复合属性名
+	
+	<bean id="foo" class="foo.Bar">
+	    <property name="fred.bob.sammy" value="123" />
+	</bean>
+上面例子标识，foo有一个fred属性，fred有一个bob属性，bob有一个sammy属性，但是fred、bob在foo构造完成后不能为null。
+###1.3.3 使用depends-on
+如果两个没有依赖关系的bean，需要按照一定顺序实例化，可以使用&lt;bean/&gt;的depends-on属性，depends-on属性可以通过逗号(,)、空格或者分号(;)定义多个bean需要在该bean实例化之前完成实例化。
+
+	<bean id="beanOne" class="ExampleBean" depends-on="manager,accountDao">
+	    <property name="manager" ref="manager" />
+	</bean>
+	
+	<bean id="manager" class="ManagerBean" />
+	<bean id="accountDao" class="x.y.jdbc.JdbcAccountDao" />
+###1.3.4 懒加载bean Lazy-initialized beans
+默认情况，ApplicationContext会在初始化阶段立即创建并配置所有的单例bean。可以通过&lt;bean/&gt;的lazy-init属性使单例bean在使用时才被创建，但是如果一个懒加载bean被一个非懒加载bean引用作为依赖，那么该懒加载bean也会在立即创建，然后注入到非懒加载bean。
+
+同时也可以通过&lt;beans/&gt;元素的default-lazy-init属性，从容器基本控制bean的懒加载。
+###1.3.5 自动装配 Autowiring collaborators
+Spring可以通过配置自动装配Bean的依赖  
+1、Autowiring的好处  
+（1）Autowiring可以显著减少properties or constructor arguments的配置  
+（2）自动装配可以根据你对象的变化自动更新配置，进而不用显示的去修改配置文件中的properties or constructor arguments  
+2、可以通过&lt;bean/&gt;元素的autowire属性开控制bean的自动装配模式或关闭自动装备。可以通过&lt;beans/&gt;的default-autowire属性，配置整个xml内的bean的自动装配模式或关闭自动装备。  
+3、自动装配模式 Autowiring modes
+（1）no，默认为不进行自动装配，依赖必须通过ref属性或元素注入  
+（2）byName，根据property名字进行自动装配，spring会查找有相同id/name的bean，调用setter方法，进行自动装配。  
+（3）byType，spring容器会查找和property的class类型一样的唯一的一个bean，调用setter方法进行注入；如果容器中同一class类型出现多个bean，则会抛出异常  
+（4）constructor，与byType类型，只是调用构造方法进行注入  
+4、byType和constructor模式，可以注入数组或集合类型的属性，这个时候所有匹配数组或集合的类型的bean都会被添加进对应的数组或集合中，如果是Map类型属性，beand的id或name会被作为key，bean对象会被作为value。  
+	
+	public class FlyBehaviorDisplay {
+		private List<FlyBehavior> flyBehavior;
+	
+		public void setFlyBehavior(List<FlyBehavior> flyBehavior) {
+			this.flyBehavior = flyBehavior;
+		}
+		
+		public void performFly(){
+			for(FlyBehavior behavior : flyBehavior){
+				behavior.fly();
+			}
+		}
+	}
+
+xml配置
+
+	<beans xmlns="http://www.springframework.org/schema/beans"
+	    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	    xsi:schemaLocation="http://www.springframework.org/schema/beans
+	        http://www.springframework.org/schema/beans/spring-beans.xsd" >
+		<bean id="flyWithWings" class="org.asaopen.behavior.impl.FlyWithWings"/>
+		<bean id="flyWithRocket" class="org.asaopen.behavior.impl.FlyWithRocket" />
+
+	    <bean id="flyDisplay" class="org.asaopen.service.FlyBehaviorDisplay" autowire="byType"/>
+	</beans>
+5、自动装配的限制和缺点  
+（1）property 和 constructor-arg 的明确依赖总是会覆盖自动装配。而且，不能自动装配基础数据类型、Strings、Classes和这里类型的集合或数组。  
+（2）自动装配不够精确，对于对象之间的依赖关系显示的不够明确。  
+（3）自动装配信息不能够通过工具生成文档。  
+（4）如果类型一样的bean存在多个，虽然对于集合或数组是没有问题的，但是对于只需要单个依赖对象的bean的时候，spring就会抛出异常。  
+
+6、对于一些自动装配的缺点，可以有以下几种选择：
+（1）放弃自动装配  
+（2）通过将&lt;bean/&gt;的autowire-candidate设置为false，让该bean在自动装配是不成为候选者。  
+（3）通过将&lt;bean/&gt;的primary 设置为true，让该bean成为自动装配的主候选者。  
+（4）通过注解实现更细粒度的配置  
+
+7、可以通过&lt;beans/&gt;的default-autowire-candidates属性，通过bean名称的模式匹配来限制自动装配的候选者；但是如果&lt;bean/&gt;的autowire-candidate设置为false，模式匹配将不生效。  

@@ -289,3 +289,148 @@ xml配置
 （4）通过注解实现更细粒度的配置  
 
 7、可以通过&lt;beans/&gt;的default-autowire-candidates属性，通过bean名称的模式匹配来限制自动装配的候选者；但是如果&lt;bean/&gt;的autowire-candidate设置为false，模式匹配将不生效。  
+###1.3.6 方法注入 Method injection
+####1.3.6.1 使用场景
+假设单例bean A在某个方法的调用中，每次需要一个非单例的bean B，如果bean B也是交给容器管理的，通过属性注入的方式将bean B注入到bean A中，是没有办法实现在每次调用方法的时候，得到一个新的bean B的。
+这个时候，可以放弃控制反转(IOC)，通过实现ApplicationContextAware 接口，调用容器的getBean方法，获取一个新的bean B实例，代码如下：
+
+	// a class that uses a stateful Command-style class to perform some processing
+	package fiona.apple;
+	
+	// Spring-API imports
+	import org.springframework.beans.BeansException;
+	import org.springframework.context.ApplicationContext;
+	import org.springframework.context.ApplicationContextAware;
+	
+	public class CommandManager implements ApplicationContextAware {
+	
+	    private ApplicationContext applicationContext;
+	
+	    public Object process(Map commandState) {
+	        // grab a new instance of the appropriate Command
+	        Command command = createCommand();
+	        // set the state on the (hopefully brand new) Command instance
+	        command.setState(commandState);
+	        return command.execute();
+	    }
+	
+	    protected Command createCommand() {
+	        // notice the Spring API dependency!
+	        return this.applicationContext.getBean("command", Command.class);
+	    }
+	
+	    public void setApplicationContext(
+	            ApplicationContext applicationContext) throws BeansException {
+	        this.applicationContext = applicationContext;
+	    }
+	}
+但是这种方式不是很令人满意，因为业务代码耦合了Spring框架。这个时候，方法注入(Method Injection)可以避免这种耦合。
+####1.3.6.2 查找方法式注入(Lookup method injection，不知道翻译的对不对)
+1、查找方法式注入，是容器重写它管理的beans的方法，该方法返回的查找结果是容器中一个其他命名bean。Spring框架通过cglib动态生成了一个重写了对应的方法的子类来实现方法注入。  
+2、注意事项  
+（1）为了能够动态生成子类，需要重写方法的bean不能是final类，方法不能是final方法。  
+（2）查找方法式注入不能和工厂方法以及@Bean methods in configuration classes一起工作，因为此时容易不能控制创建实例也就不能再运行时创建一个子类。  
+3、配置示例
+	package fiona.apple;
+	
+	// no more Spring imports!
+	
+	public abstract class CommandManager {
+	
+	    public Object process(Object commandState) {
+	        // grab a new instance of the appropriate Command interface
+	        Command command = createCommand();
+	        // set the state on the (hopefully brand new) Command instance
+	        command.setState(commandState);
+	        return command.execute();
+	    }
+	
+	    // okay... but where is the implementation of this method?
+	    protected abstract Command createCommand();
+	}
+  
+xml
+
+	<!-- a stateful bean deployed as a prototype (non-singleton) -->
+	<bean id="myCommand" class="fiona.apple.AsyncCommand" scope="prototype">
+	    <!-- inject dependencies here as required -->
+	</bean>
+	
+	<!-- commandProcessor uses statefulCommandHelper -->
+	<bean id="commandManager" class="fiona.apple.CommandManager">
+	    <lookup-method name="createCommand" bean="myCommand"/>
+	</bean>
+
+需要注入的方法最好依照下面的格式(也可以不是抽象方法，如果是抽象方法，生成的子类实现抽象方法，如果是非抽象方法，生成的子类重写该方法)：
+	
+	<public|protected> [abstract] <return-type> theMethodName(no-arguments);
+
+这里commandManager会是一个通过cglib生成的动态代理子类。
+4、以注解方法配置Lookup method injection
+	
+	public abstract class CommandManager {
+
+	    public Object process(Object commandState) {
+	        Command command = createCommand();
+	        command.setState(commandState);
+	        return command.execute();
+	    }
+	
+	    @Lookup("myCommand")
+	    protected abstract Command createCommand();
+	}
+或者更简单
+
+	public abstract class CommandManager {
+
+	    public Object process(Object commandState) {
+	        MyCommand command = createCommand();
+	        command.setState(commandState);
+	        return command.execute();
+	    }
+	
+	    @Lookup
+	    protected abstract MyCommand createCommand();
+	}
+
+####1.3.6.3 强制方法替换 Arbitrary method replacement
+直接上例子：
+
+	public class MyValueCalculator {
+
+	    public String computeValue(String input) {
+	        // some real code...
+	    }
+	
+	    // some other methods...
+	
+	}
+
+实现org.springframework.beans.factory.support.MethodReplace接口的类提供一个新的方法：
+
+	/**
+	 * meant to be used to override the existing computeValue(String)
+	 * implementation in MyValueCalculator
+	 */
+	public class ReplacementComputeValue implements MethodReplacer {
+	
+	    public Object reimplement(Object o, Method m, Object[] args) throws Throwable {
+	        // get the input value, work with it, and return a computed result
+	        String input = (String) args[0];
+	        ...
+	        return ...;
+	    }
+	}
+xml配置
+	
+	<bean id="myValueCalculator" class="x.y.z.MyValueCalculator">
+	    <!-- arbitrary method replacement -->
+	    <replaced-method name="computeValue" replacer="replacementComputeValue">
+	        <arg-type>java.lang.String</arg-type>
+	    </replaced-method>
+	</bean>
+	
+	<bean id="replacementComputeValue" class="a.b.c.ReplacementComputeValue"/>
+
+当你执行myValueCalculator.computeValue(args)的时候，Spring会通过cglib创建一个MyValueCalculator的子类，然后调用replacementComputeValue.reimplement(args)方法，原MyValueCalculator的computeValue方法不再执行。  
+###1.4 Bean范围(生命周期、Bean scopes)

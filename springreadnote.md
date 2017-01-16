@@ -434,3 +434,63 @@ xml配置
 
 当你执行myValueCalculator.computeValue(args)的时候，Spring会通过cglib创建一个MyValueCalculator的子类，然后调用replacementComputeValue.reimplement(args)方法，原MyValueCalculator的computeValue方法不再执行。  
 ###1.4 Bean范围(生命周期、Bean scopes)
+####1.4.1 Bean scopes类型
+1、singleton：默认scope，bean对应的实例一个IOC容器只有一个  
+2、prototype：bean对应的实例可以有任意多个  
+3、request：bean的生命周期与http request的生命周期一致，只在spring web容器中可用  
+4、session：bean的生命周期与http session的生命周期一致，只在spring web容器中可用  
+5、globalSession：bean的生命周期与global http session的生命周期一致，通常应用在Portlet context中(单独登录，统一门户)，只在spring web容器中可用  
+6、application：bean的生命周期与ServletContext的生命周期一致，只在spring web容器中可用  
+7、websocket：bean的生命周期与WebSocket的生命周期一致，只在spring web容器中可用  
+###1.4.2 单例 The singleton scope
+当你定义一个bean的时候，如果这个bean的scope是singleton，spring的IOC容器会创建一个实例对象，然后这一个实例被存在缓存中，所有通过Id、Name对这个bean的访问，依赖，得到的返回值都是被缓存的实例对象。 
+
+Spring单例的实现和设计模式中单例的实现是截然不同的，设计模式中的单例是通过硬编码的形式，保证一个ClassLoader只有一个特定class的实例；spring的单例可以描述为一个容器一个bean，spring默认的scope就是singleton。  
+###1.4.3 原型 The prototype scope
+当你定义一个bean的时候，如果这个bean的scope是prototype，通过ID、Name对这个bean的访问，每次得到的都是一个新的对象，有一个规则：**有状态的bean用prototype，无状态的bean用singleton**。 
+ 
+和其他scope相比，Spring不会管理prototype bean的这个生命周期：容器实例化、配置、组装一个prototype对象，把它交给client后就没有更多的记录。尽管初始化生命周期的方法被调用，但是没有销毁生命周期的方便可被调用。client必须自己清理prototype-scoped对象，释放prototype-scoped对象持有的资源。To get the Spring container to release resources held by prototype-scoped beans, try using a custom bean **post-processor**, which holds a reference to beans that need to be cleaned up。  
+
+在某些方面，对于prototype-scoped bean来说，Spring container的角色就像是java中的new 操作符。(For details on the lifecycle of a bean in the Spring container, see Section 7.6.1, “Lifecycle callbacks”.)  
+###1.4.4 Request, session, global session, application, and WebSocket scopes
+request, session, globalSession, application, and websocket scopes 只有在web类型的容器实现中才是可用的，如果在非web项目中使用这些scope，会抛出unknown bean scope异常。
+####1.4.4.1 Request scope 
+xml配置如下：
+
+	<bean id="loginAction" class="com.foo.LoginAction" scope="request"/>
+注解配置如下：
+
+	@RequestScope
+	@Component
+	public class LoginAction {
+	    // ...
+	}
+由于每一次http请求，Spring容器都会创建一个新的loginAction对象，所以你可以在LoginAction实例中有很多状态字段，并且不用担心并发问题。
+####1.4.4.2 Session scope
+xml配置如下：
+
+	<bean id="userPreferences" class="com.foo.UserPreferences" scope="session"/>
+注解配置如下：
+	
+	@SessionScope
+	@Component
+	public class UserPreferences {
+	    // ...
+	}
+####1.4.4.3 Global session scope
+xml配置如下：
+
+	<bean id="userPreferences" class="com.foo.UserPreferences" scope="globalSession"/>
+globalSession scope和session scope很类似，但是globalSession 只应用在portlet-based的web项目中。如果你在普通的web项目中使用globalSession，事实上spring会使用session scope。
+####1.4.4.4 Application scope
+xml配置如下：
+
+	<bean id="appPreferences" class="com.foo.AppPreferences" scope="application"/>
+注解配置如下：
+
+	@ApplicationScope
+	@Component
+	public class AppPreferences {
+	    // ...
+	}
+####1.4.4.5 

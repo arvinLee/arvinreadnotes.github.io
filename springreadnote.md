@@ -493,4 +493,11 @@ xml配置如下：
 	public class AppPreferences {
 	    // ...
 	}
-####1.4.4.5 
+####1.4.4.5 Scoped beans as dependencies 作为依赖的bean
+如果想要将一个HTTP request(session) scoped的bean注入到一个更长生命周期的bean中，需要使用AOP proxy去替代需要注入的bean。也就是说，你需要注入一个暴露了与较短生命周期bean相同接口的代理对象，而且这个对象能够找到真正的目标对象并且委托方法调用到实际对象上。 
+
+注：  
+1、You may also use <aop:scoped-proxy/> between beans that are scoped as singleton, with the reference then going through an intermediate proxy that is serializable and therefore able to re-obtain the target singleton bean on deserialization.   
+针对singleton scope使用<aop:scoped-proxy/>，然后通过一个可序列化的中间代理，因此能够在反序列化时重新获得目标单例bean。 
+
+

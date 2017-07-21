@@ -259,19 +259,21 @@ Spring可以通过配置自动装配Bean的依赖
 （4）constructor，与byType类型，只是调用构造方法进行注入  
 4、byType和constructor模式，可以注入数组或集合类型的属性，这个时候所有匹配数组或集合的类型的bean都会被添加进对应的数组或集合中，如果是Map类型属性，beand的id或name会被作为key，bean对象会被作为value。  
 ​	
-	public class FlyBehaviorDisplay {
-		private List<FlyBehavior> flyBehavior;
+```java
+public class FlyBehaviorDisplay {
+	private List<FlyBehavior> flyBehavior;
+
+	public void setFlyBehavior(List<FlyBehavior> flyBehavior) {
+		this.flyBehavior = flyBehavior;
+	}
 	
-		public void setFlyBehavior(List<FlyBehavior> flyBehavior) {
-			this.flyBehavior = flyBehavior;
-		}
-		
-		public void performFly(){
-			for(FlyBehavior behavior : flyBehavior){
-				behavior.fly();
-			}
+	public void performFly(){
+		for(FlyBehavior behavior : flyBehavior){
+			behavior.fly();
 		}
 	}
+}
+```
 
 xml配置
 

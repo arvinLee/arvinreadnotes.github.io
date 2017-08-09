@@ -23,7 +23,7 @@
 ####1.3.1.1 构造器注入
 1、调用构造方法注入或者调用静态工厂方法注入是相似的。  
 2、如果构造器参数之间没有继承关系或实现相同接口，不会混淆，可以只通过ref参数引用对应的bean即可。如下：  
-	
+​	
 	<beans>
 	    <bean id="foo" class="x.y.Foo">
 	        <constructor-arg ref="bar"/>
@@ -54,7 +54,7 @@
 	    <constructor-arg name="years" value="7500000"/>
 	    <constructor-arg name="ultimateAnswer" value="42"/>
 	</bean>
-
+	
 	package examples;
 		public class ExampleBean {
 	
@@ -65,7 +65,7 @@
 	        this.years = years;
 	        this.ultimateAnswer = ultimateAnswer;
 	    }
-
+	
 	}
 
 ####1.3.1.2 Setter方法注入
@@ -87,14 +87,14 @@
 	    xmlns:p="http://www.springframework.org/schema/p"
 	    xsi:schemaLocation="http://www.springframework.org/schema/beans
 	    http://www.springframework.org/schema/beans/spring-beans.xsd">
-
+	
 	    <bean id="myDataSource" class="org.apache.commons.dbcp.BasicDataSource"
 	        destroy-method="close"
 	        p:driverClassName="com.mysql.jdbc.Driver"
 	        p:url="jdbc:mysql://localhost:3306/mydb"
 	        p:username="root"
 	        p:password="masterkaoli"/>
-
+	
 	</beans>
 
 3、Spring容器还支持通过 **PropertyEditor**机制，实例化一个**java.util.Properties**实例
@@ -133,7 +133,7 @@
 5、关联其他bean References to other beans (collaborators)，是通过ref元素或者属性来实现的，ref元素有三个属性，bean, local(4.0过期), or parent。bean属性的值可以目标bean的id或者name；如果有相同id的bean存在父容器需要bean注入，可以通过parent属性来指定。  
 6、内部beans(Inner beans)，是在&lt;constructor-arg/&gt;或者&lt;property/&gt;元素内部的bean元素，内部bean不需要定义id或者name，就算定义了，也会被忽略。内部bean除了注入到包围他的bean中外不能被注入到其他合作的bean中，也不能独立的访问他们。  
 7、通过&lt;list/&gt;,&lt;set/&gt;,&lt;map/&gt;,&lt;props/&gt;等元素，你可以设置Java集合类型的参数，例如List, Set, Map, and Properties。  
-	
+​	
 	<bean id="moreComplexObject" class="example.ComplexObject">
 	    <!-- results in a setAdminEmails(java.util.Properties) call -->
 	    <property name="adminEmails">
@@ -189,19 +189,19 @@
 	<beans>
 注意，不能合并不同类型的集合属性，比如不能将list或者map；merge属性应该是child的属性，在parent上设置merge属性是没有意义的。  
 9、Null and empty string values 
-	
+​	
 	<bean class="ExampleBean">
 	    <property name="email" value=""/>
 	</bean>
-
+	
 	<bean class="ExampleBean">
 	    <property name="email">
 	        <null/>
 	    </property>
 	</bean>
-	
+
 10、通过p或c命名空间，可以简化xml配置
-	
+​	
 	<beans xmlns="http://www.springframework.org/schema/beans"
 	    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	    xmlns:p="http://www.springframework.org/schema/p"
@@ -211,7 +211,7 @@
 	
 	    <bean name="p-namespace" class="com.example.ExampleBean"
 	        p:email="foo@bar.com"  p:spouse-ref="jane"/>
-
+	
 		<!-- c-namespace declaration -->
 		<bean id="foo" class="x.y.Foo" c:bar-ref="bar" c:baz-ref="baz" c:email="foo@bar.com"/>
 		
@@ -220,7 +220,7 @@
 	</beans>
 可以通过驼峰命名法来定义ref，例如p:spouseRef，但是这个容易和以Ref结尾的属性名冲突。  
 11、复合属性名
-	
+​	
 	<bean id="foo" class="foo.Bar">
 	    <property name="fred.bob.sammy" value="123" />
 	</bean>
@@ -250,7 +250,7 @@ Spring可以通过配置自动装配Bean的依赖
 （3）byType，spring容器会查找和property的class类型一样的唯一的一个bean，调用setter方法进行注入；如果容器中同一class类型出现多个bean，则会抛出异常  
 （4）constructor，与byType类型，只是调用构造方法进行注入  
 4、byType和constructor模式，可以注入数组或集合类型的属性，这个时候所有匹配数组或集合的类型的bean都会被添加进对应的数组或集合中，如果是Map类型属性，beand的id或name会被作为key，bean对象会被作为value。  
-	
+​	
 	public class FlyBehaviorDisplay {
 		private List<FlyBehavior> flyBehavior;
 	
@@ -273,7 +273,7 @@ xml配置
 	        http://www.springframework.org/schema/beans/spring-beans.xsd" >
 		<bean id="flyWithWings" class="org.asaopen.behavior.impl.FlyWithWings"/>
 		<bean id="flyWithRocket" class="org.asaopen.behavior.impl.FlyWithRocket" />
-
+	
 	    <bean id="flyDisplay" class="org.asaopen.service.FlyBehaviorDisplay" autowire="byType"/>
 	</beans>
 5、自动装配的限制和缺点  
@@ -332,11 +332,11 @@ xml配置
 （2）查找方法式注入不能和工厂方法以及@Bean methods in configuration classes一起工作，因为此时容易不能控制创建实例也就不能再运行时创建一个子类。  
 3、配置示例
 	package fiona.apple;
-	
+
 	// no more Spring imports!
-	
+
 	public abstract class CommandManager {
-	
+
 	    public Object process(Object commandState) {
 	        // grab a new instance of the appropriate Command interface
 	        Command command = createCommand();
@@ -348,7 +348,7 @@ xml配置
 	    // okay... but where is the implementation of this method?
 	    protected abstract Command createCommand();
 	}
-  
+
 xml
 
 	<!-- a stateful bean deployed as a prototype (non-singleton) -->
@@ -362,12 +362,12 @@ xml
 	</bean>
 
 需要注入的方法最好依照下面的格式(也可以不是抽象方法，如果是抽象方法，生成的子类实现抽象方法，如果是非抽象方法，生成的子类重写该方法)：
-	
+​	
 	<public|protected> [abstract] <return-type> theMethodName(no-arguments);
 
 这里commandManager会是一个通过cglib生成的动态代理子类。
 4、以注解方法配置Lookup method injection
-	
+​	
 	public abstract class CommandManager {
 
 	    public Object process(Object commandState) {
@@ -422,7 +422,7 @@ xml
 	    }
 	}
 xml配置
-	
+​	
 	<bean id="myValueCalculator" class="x.y.z.MyValueCalculator">
 	    <!-- arbitrary method replacement -->
 	    <replaced-method name="computeValue" replacer="replacementComputeValue">
@@ -448,7 +448,7 @@ xml配置
 Spring单例的实现和设计模式中单例的实现是截然不同的，设计模式中的单例是通过硬编码的形式，保证一个ClassLoader只有一个特定class的实例；spring的单例可以描述为一个容器一个bean，spring默认的scope就是singleton。  
 ###1.4.3 原型 The prototype scope
 当你定义一个bean的时候，如果这个bean的scope是prototype，通过ID、Name对这个bean的访问，每次得到的都是一个新的对象，有一个规则：**有状态的bean用prototype，无状态的bean用singleton**。 
- 
+
 和其他scope相比，Spring不会管理prototype bean的这个生命周期：容器实例化、配置、组装一个prototype对象，把它交给client后就没有更多的记录。尽管初始化生命周期的方法被调用，但是没有销毁生命周期的方便可被调用。client必须自己清理prototype-scoped对象，释放prototype-scoped对象持有的资源。To get the Spring container to release resources held by prototype-scoped beans, try using a custom bean **post-processor**, which holds a reference to beans that need to be cleaned up。  
 
 在某些方面，对于prototype-scoped bean来说，Spring container的角色就像是java中的new 操作符。(For details on the lifecycle of a bean in the Spring container, see Section 7.6.1, “Lifecycle callbacks”.)  
@@ -471,7 +471,7 @@ xml配置如下：
 
 	<bean id="userPreferences" class="com.foo.UserPreferences" scope="session"/>
 注解配置如下：
-	
+​	
 	@SessionScope
 	@Component
 	public class UserPreferences {
@@ -488,16 +488,22 @@ xml配置如下：
 	<bean id="appPreferences" class="com.foo.AppPreferences" scope="application"/>
 注解配置如下：
 
-	@ApplicationScope
-	@Component
-	public class AppPreferences {
-	    // ...
-	}
+```java
+@ApplicationScope
+@Component
+public class AppPreferences {
+    // ...
+}
+```
 ####1.4.4.5 Scoped beans as dependencies 作为依赖的bean
 如果想要将一个HTTP request(session) scoped的bean注入到一个更长生命周期的bean中，需要使用AOP proxy去替代需要注入的bean。也就是说，你需要注入一个暴露了与较短生命周期bean相同接口的代理对象，而且这个对象能够找到真正的目标对象并且委托方法调用到实际对象上。 
 
 注：  
 1、You may also use <aop:scoped-proxy/> between beans that are scoped as singleton, with the reference then going through an intermediate proxy that is serializable and therefore able to re-obtain the target singleton bean on deserialization.   
 针对singleton scope使用<aop:scoped-proxy/>，然后通过一个可序列化的中间代理，因此能够在反序列化时重新获得目标单例bean。 
+
+
+
+
 
 

@@ -24,18 +24,6 @@
 1、调用构造方法注入或者调用静态工厂方法注入是相似的。  
 2、如果构造器参数之间没有继承关系或实现相同接口，不会混淆，可以只通过ref参数引用对应的bean即可。如下：  
 ​	
-<<<<<<< HEAD
-	<beans>
-	    <bean id="foo" class="x.y.Foo">
-	        <constructor-arg ref="bar"/>
-	        <constructor-arg ref="baz"/>
-	    </bean>
-	
-	    <bean id="bar" class="x.y.Bar"/>
-	
-	    <bean id="baz" class="x.y.Baz"/>
-	</beans>
-=======
 ```xml
 <beans>
     <bean id="foo" class="x.y.Foo">
@@ -48,7 +36,6 @@
     <bean id="baz" class="x.y.Baz"/>
 </beans>
 ```
->>>>>>> 45a774ae11600bbe652cde6598a40d91d1a90aa9
 
 **如果构造器的两个参数有继承关系或者实现同一个接口，那么按照这两个参数在配置文件中的顺序依次注入。**  
 3、如果通过value属性注入基础类型参数，spring无法知道value对应的基础类型，可以通过type属性来标识参数的具体类型，(测试发现，也可以不传type属性，spring会根据类型和顺序判断注入参数)如下：  
@@ -69,25 +56,6 @@
 ```
 5、也可以通过参数名注入参数，但参数名注入是有限制的，需要在编译程序时打开调试模式（即在编译时使用“javac –g:vars”在class文件中生成变量调试信息，从而能获取参数名字，默认是不包含变量调试信息的，获取不到参数名字）或在构造器上使用@ConstructorProperties（java.beans.ConstructorProperties）注解来指定参数名。(eclipse可以通过勾选Properties>Java Compiler>add variable attributes to generated class filer，来实现控制变量调试信息的生成)
 
-<<<<<<< HEAD
-	<bean id="exampleBean" class="examples.ExampleBean">
-	    <constructor-arg name="years" value="7500000"/>
-	    <constructor-arg name="ultimateAnswer" value="42"/>
-	</bean>
-	
-	package examples;
-		public class ExampleBean {
-	
-	    // Fields omitted
-	
-	    @ConstructorProperties({"years", "ultimateAnswer"})
-	    public ExampleBean(int years, String ultimateAnswer) {
-	        this.years = years;
-	        this.ultimateAnswer = ultimateAnswer;
-	    }
-	
-	}
-=======
 ```xml
 <bean id="exampleBean" class="examples.ExampleBean">
     <constructor-arg name="years" value="7500000"/>
@@ -107,7 +75,6 @@ package examples;
 
 }
 ```
->>>>>>> 45a774ae11600bbe652cde6598a40d91d1a90aa9
 
 ####1.3.1.2 Setter方法注入
 1、Setter注入是先调用无参的构造方法或者无参静态工厂方法创建实例后，调用setter 方法注入的。  
@@ -292,19 +259,6 @@ Spring可以通过配置自动装配Bean的依赖
 （4）constructor，与byType类型，只是调用构造方法进行注入  
 4、byType和constructor模式，可以注入数组或集合类型的属性，这个时候所有匹配数组或集合的类型的bean都会被添加进对应的数组或集合中，如果是Map类型属性，beand的id或name会被作为key，bean对象会被作为value。  
 ​	
-<<<<<<< HEAD
-	public class FlyBehaviorDisplay {
-		private List<FlyBehavior> flyBehavior;
-	
-		public void setFlyBehavior(List<FlyBehavior> flyBehavior) {
-			this.flyBehavior = flyBehavior;
-		}
-		
-		public void performFly(){
-			for(FlyBehavior behavior : flyBehavior){
-				behavior.fly();
-			}
-=======
 ```java
 public class FlyBehaviorDisplay {
 	private List<FlyBehavior> flyBehavior;
@@ -316,7 +270,6 @@ public class FlyBehaviorDisplay {
 	public void performFly(){
 		for(FlyBehavior behavior : flyBehavior){
 			behavior.fly();
->>>>>>> 45a774ae11600bbe652cde6598a40d91d1a90aa9
 		}
 	}
 }

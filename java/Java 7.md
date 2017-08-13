@@ -229,7 +229,90 @@ public void useCustomBingding() throws ScriptException{
 
 #### 2.1.3 脚本执行上下文
 
-​	
+​	脚本引擎通过上下文对象来获取与脚本执行相关的信息。
+
+​	1、输入输出
+
+​	默认情况下，脚本的输入输出都是发生在标准控制台中，通过ScriptContext的setReader和setErrorWriter方法可以分别设置脚本执行时的数据输入来源和产生错误时出错信息的输出目的。
+
+```java
+public void scriptToFile() throws IOException,ScriptException{
+  	ScriptEngineManager engineManager = new ScriptEngineManager();
+  	ScriptEngine engine = engineManager.getEngineByName("JavaScript");
+  	ScriptContext context = engine.getContext();
+  	context.setWriter(new FileWriter("output.txt"));
+  	engine.eval("print('hello world')");
+}
+```
+
+​	2、自定义属性
+
+​	ScriptContext有与ServletContext中类似的获取和设置属性的方法，即setAttribute和getAttribute，ScriptContext中的属性是由作用域之分的。不同的作用域的区别在于查询属性时的优先级不同。优先级高的作用域中的属性会隐藏优先级低的作用域中的同名属性。
+
+​	ScriptContext所包含的作用域是固定的，开发人员不能自定义作用域。通过getScopes方法可以得到所有可用的作用域列表。ScriptContext.ENGINE_SCOPE表示的作用域对应的是当前的脚本引擎，而ScriptContext.GLOBAL_SCOPE表示的作用域对应的是从同一引擎工厂这种创建出来的所有脚本引擎对象。前者优先级较高。
+
+```java
+public void scriptContextAttribute() throws IOException,ScriptException{
+  	ScriptEngineManager engineManager = new ScriptEngineManager();
+  	ScriptEngine engine = engineManager.getEngineByName("JavaScript");
+  	ScriptContext context = engine.getContext();
+  	context.setAttribute("name","Alex",ScriptContext.GLOBAL_SCOPE);
+  	context.setAttribute("name","Bob",ScriptContext.ENGINE_SCOPE);
+  	context.getAttribute("name");//值为Bob
+}
+```
+
+​	3、语言绑定对象
+
+​	脚本执行上下文中也可以设置语言绑定对象。与属性一样，有作用域之分。
+
+```java
+public void scriptContextBingdings() throws IOException,ScriptException{
+  	ScriptEngineManager engineManager = new ScriptEngineManager();
+  	ScriptEngine engine = engineManager.getEngineByName("JavaScript");
+  	ScriptContext context = engine.getContext();
+  	Bindings bindings1 = engine.crateBdindings();
+  	bindings1.put("name","Alex");
+  	Bindings bindings2 = engine.crateBdindings();
+  	bindings2.put("name","Bob");
+  	context.setBindings(bindings1,ScriptContext.GLOBAL_SCOPE);
+  	context.setBindings(bindings2,ScriptContext.ENGINE_SCOPE);
+  	engine.eval("print('name')")//值为Bob
+}
+```
+
+​	脚本引擎中的put和get方法所操作的实际上就是ScriptContext中作用域为ENGINE_SCOPE的语言绑定对象。
+
+```java
+public void useScriptContextValues() throws IOException,ScriptException{
+  	ScriptEngineManager engineManager = new ScriptEngineManager();
+  	ScriptEngine engine = engineManager.getEngineByName("JavaScript");
+  	ScriptContext context = engine.getContext();
+  	Bindings bindings = context.getBindings(ScriptContext.ENGINE_SCOPE);
+  	bindings.put("name","Alex");
+  	engine.eval("print('name')")//值为Bob
+}
+```
+
+脚本上下问的setAttribute实际上是向语言绑定对象中添加数据的。
+
+#### 2.1.4 脚本的编译
+
+​	脚本语言一般是解释执行的，脚本引擎在运行时需要先解释脚本之后再运行。一般来说，通过解释执行的方式来运行脚本的速度比编译之后再运行会慢一些。当一段脚本需要被多次重复执行时，可以先对脚本进行编译。实现javax.script.Compilable接口的引擎，支持对脚本进行编译。
+
+​	Java SE中自带的JavaScript脚本引擎室支持对脚本进行编译的。
+
+````java
+public void compile(){
+  	ScriptEngineManager engineManager = new ScriptEngineManager();
+  	ScriptEngine engine = engineManager.getEngineByName("JavaScript");
+  	Compilable compile = (Compilable)engine;
+  	CompiledScript = compile.compile("print('hello world')");
+  	script.eval();
+}
+````
+
+#### 2.1.5 方法调用
 
 
 

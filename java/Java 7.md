@@ -314,6 +314,84 @@ public void compile(){
 
 #### 2.1.5 方法调用
 
+​	脚本引擎实现Invocable接口，即可调用脚本中的顶层函数或者对象中的成员方法。如果函数和方法实现了某个Java 接口，可以通过Invocable接口中的方法获取Java接口的实现对象。
+
+​	JavaSE的JavaScriptEngine实现了Invocable，invokeFunction调用顶层函数，invokeMethod调用成员方法。
+
+Invocable.getInterface方法，可以获取通过脚本实现接口的接口代理类。顶层方法实现接口和成员方法实现接口，不同的是getInterface的参数不同。
+
+### 2.2 反射API##
+
+#### 2.2.1获取构造方法
+
+1、getConstructors
+
+​	获取当前类对应的public构造方法。
+
+​	An array of length 0 is returned if the class has no public constructors, or if the class is an array class, or if the class reflects a primitive type or void. 
+
+2、getDeclaredCOnstructors
+
+​	获取当前类对应的 public, protected, default (package) access, and private constructors构造方法。
+
+3、获取可变参数的构造方法
+
+```java
+public void userVarargsConstructor(){
+  //构成参数类型是数组类型
+  Constructor<StepFather> constructor = StepFather.class.getConstructor(String[].class);
+  //创建实例时数组参数要强转位Object
+  StepFather instance = constructor.newInstance((Object)new String[]{"A","B","c"});
+}
+```
+
+4、获取内嵌类的构造方法
+
+​	如果是静态内嵌类，跟普通的类没有什么区别。
+
+​	如果是非静态内嵌类，getConstructor方法的第一个参数要传外部类对应的Class对象，然后再跟上对应的参数类型；newInstance方法，第一个参数要传外部类对应的实例对象，然后跟上对应的参数值。
+
+#### 2.2.2 获取域
+
+getFileds、getFiled、getDeclaredFileds、getDeclaredFiled
+
+1、getDeclaredFileds、getDeclaredFiled
+
+​	获取的是当前类中定义的public, protected, default (package) access, and private实例变量，包括静态和非静态的。
+
+2、getFileds、getFiled
+
+​	获取当前类和其父类中定义的public实例变量。
+
+3、公有域可以通过反射直接操作，私有域无法直接进行操作。
+
+4、静态域在进行获取操作时，不需要对应实例对象，非静态域在进行获取操作时需要对应实例对象
+
+#### 2.2.3 获取方法
+
+​	基本与获取域相同
+
+​	私有方法可以通过setAccessible方法得到访问权限。
+
+#### 2.2.4 操作数组
+
+​	通过java.lang.reflect.Array工具类，操作数组，newInstance、get、set等方法。
+
+#### 2.2.5访问权限与异常处理
+
+​	Constructor、Filed、Method都继承自java.lang.reflect.AccessibleObject，其中的方法setAccessible可以用来设置是否绕开默认的权限检查。
+
+在利用invoke方法来调用方法时，如果方法本身抛出了异常，invoke会抛出InvocationTargetException，然后通过getCause获取真正的异常信息。
+
+Java 7为所有与反射操作相关的异常类添加了一个新的父类，ReflectiveOperationException，可以避免分别捕获。
+
+### 2.3 动态代理
+
+​	动态代理机制的强大之处在于可以在运行时动态实现多个接口，而不需要在源代码中通过implements关键字来声明，同时动态代理吧接口中方法调用的处理逻辑交给开发人员，让开发人员可以灵活处理，通过动态代理可以实现面向切面变成中常见的方法拦截功能。
+
+#### 2.3.1 基本使用方式
+
+​	动态代理址支持对接口提供代理，一般的java类不行的。如果要代理的借口不是公开的，那么被代理的接口和创建动态代理的代码必须在同一个包中。
 
 
 
